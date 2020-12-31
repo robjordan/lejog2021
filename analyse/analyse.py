@@ -30,7 +30,7 @@ print("total track length: ", track_len, "miles")
 print("mem(distances):", sys.getsizeof(distances))
 print("mem(points):", sys.getsizeof(points))
 
-with open('points.json', 'w') as f:
+with open('progress.json', 'w') as f:
     json.dump(points, f)
 
 for d in range(100, 1111, 100):
