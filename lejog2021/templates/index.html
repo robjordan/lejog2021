@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LEJOG 2021 Tracker</title>
+    <meta name="viewport" content="width=device-width, 
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var progress = []
+        let map = L.map("map").setView([53.946, -2.520], 6);
+        L.tileLayer(
+            "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=028d7dc81ad647f88f6562ce4ecd34f2", 
+            {attribution: 'Maps &copy; <a href="http://www.thunderforest.com">Thunderforest</a>,' +
+            ' Data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}
+        ).addTo(map);
+
+        var myInit = {  method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        mode: 'cors',
+                        cache: 'default' };
+
+        let myRequest = new Request("/static/js/route.json", myInit);
+
+        fetch(myRequest).then(
+            function(resp) {
+                return resp.json();
+            }).then(
+                function(route) {
+                    L.geoJSON(route).addTo(map);
+                });
+
+        let myRequest = new Request("/static/js/progress.json", myInit);
+
+        fetch(myRequest).then(
+            function(resp) {
+                return resp.json();
+            }).then(
+                function(prog) {
+                    progress = prog;
+                });
+
+        console.log(progress);
+
+    </script>
+</body>
+</html>
