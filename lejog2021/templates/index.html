@@ -24,6 +24,15 @@
 </head>
 <body>
     <div id="map"></div>
+    <div id="input">
+        <form id=inputForm>
+            <label>Your name:</label>
+            <input type="text" name="name">
+            <label>Total miles:</label>
+            <input type="text" name="mileage">
+            <input type="button" id="submit" value="Submit">
+        </form>
+    </div>
     <script>
         var progress = []
         let map = L.map("map").setView([53.946, -2.520], 6);
@@ -50,18 +59,14 @@
                     L.geoJSON(route).addTo(map);
                 });
 
-        let myRequest = new Request("/static/js/progress.json", myInit);
-
-        fetch(myRequest).then(
-            function(resp) {
-                return resp.json();
-            }).then(
-                function(prog) {
-                    progress = prog;
-                });
-
-        console.log(progress);
+        // On submit - display layer from GeoJSON
+        function addNewPin() {
+            let miles = document.getElementById("mileage").value;
+            L.map(txt).addTo(layers);
+        }
+        document.getElementById("submit").addEventListener("click", showGeojson);
 
     </script>
+
 </body>
 </html>

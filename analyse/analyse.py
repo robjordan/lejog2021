@@ -22,7 +22,7 @@ for track in gpx.tracks:
                 delta = FACTOR * point.distance_2d(prev_point) / 1000.0
                 track_len = track_len + delta
                 distances.append(track_len)
-                points.append((track_len, point.latitude, point.longitude))
+                points.append((int(track_len*1000), point.latitude, point.longitude))
 
             prev_point = point
 
@@ -31,7 +31,7 @@ print("mem(distances):", sys.getsizeof(distances))
 print("mem(points):", sys.getsizeof(points))
 
 with open('progress.json', 'w') as f:
-    json.dump(points, f)
+    json.dump(points, f, separators=(',', ':'))
 
 for d in range(100, 1111, 100):
     i = bisect.bisect_right(distances, d)
