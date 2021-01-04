@@ -11,60 +11,217 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
         integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
         crossorigin=""></script>
+    <script src="/static/js/cookies.min.js"></script>
     <style>
         body {
             padding: 0;
             margin: 0;
         }
-        html, body, #map {
+        html, body {
             height: 100%;
             width: 100%;
         }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .legend {
+            width: 160px;
+            font-size: 12px;
+            color: #333333;
+            font-family: "Open Sans", Helvetica, sans-serif;
+            padding: 5px 5px;
+            background-color: rgba(245,245,220,0.8);
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            border: 1px solid grey;
+        }
+        .nameEntry {
+            width: 100%;
+
+        }
+
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div id="input">
-        <form id=inputForm>
-            <label>Your name:</label>
-            <input type="text" name="name">
-            <label>Total miles:</label>
-            <input type="text" name="mileage">
-            <input type="button" id="submit" value="Submit">
-        </form>
+
+    <div id="map">
     </div>
+
     <script>
-        var progress = []
+        Date.prototype.toDateInputValue = (function() {
+            var local = new Date(this);
+            local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
+            return local.toJSON().slice(0,10);
+        }); 
+
+        var globalWalkers = [];
+        var globalWalker = Cookies.get('walker');
+        
+        function newWalker() {
+            name = document.getElementById("nameEntry").value;
+            updateLocation(
+                name, 
+                "0", 
+                new Date().toDateInputValue()
+                );
+                setTimeout(function() {
+                    Cookies.set('walker', name);
+                    location.reload();
+                }, 3000)
+
+        }
+
+        // paint markers on screen, using a JSON array of 'walker' dictionaries.
+        // also add names on drop-down.
+        function paintMarkers(walkers) {
+            // remove all the markers in one go
+            layerGroup.clearLayers();
+            globalWalkers = walkers;
+            
+            // markers for each current walker
+            walkers.forEach(function(w, index) {
+                // add a popup marker on  screen
+                var marker = L.marker(w['point'], {title: w['name'], riseOnHover: true, color: 'red'});
+                marker.bindPopup("<b>" + w['name'] + "</b><br/>" + w['mileage'] + " miles<br/>" + w['date']).openPopup();
+                marker.addTo(layerGroup);
+            });
+
+            // if there's no cookie, set up a form to identify this walker
+            if (globalWalker === undefined) {
+                document.getElementById('namePicker').innerHTML = '';
+                walkers.forEach(function(w, index) {
+                    // set up the new user dialogue
+                    var button = document.createElement('button');
+                    button.value = w['name'];
+                    button.innerHTML = w['name'] + "<br>last update " + w['date'];
+                    button.onclick = function() {
+                        Cookies.set('walker', w['name']);
+                        loadWalkers();
+                    }
+                    document.getElementById('namePicker').appendChild(button);
+                });
+                // and then the new walker name submit button
+                document.getElementById("nameEntrySubmit").addEventListener("click", newWalker);
+            } else {
+                walkers.forEach(function(w, index) {
+                    // set up the regular mileage update
+                    var opt = document.createElement('option');
+                    opt.value = w['name'];
+                    opt.innerHTML = w['name'];
+                    if (w['name'] == globalWalker) {
+                        opt.setAttribute('selected', true);
+                    }
+                    document.getElementById('namePicker').appendChild(opt);   
+                }); 
+                document.getElementById('datePicker').value = new Date().toDateInputValue();                
+            }
+        }
+
+        let formInner=`
+        <form id=inputForm>
+            <label>Your name</label><br>
+            <select id="namePicker" name="name"></select><br>
+            <label>Miles completed</label><br>
+            <input type="text" id="mileage" name="mileage" size="10"><br>
+            <label>Date</label><br>
+            <input type="date" id="datePicker" name="date"><br>
+            <input type="button" id="submit" value="Update">
+        </form>`
+        let newUserInner=`
+        <form>
+            Hi, I don't think we've met, are you one of these people?:<br>
+            <div id="namePicker">
+            </div>
+                None of the above, my unique name is:<br>
+                <input type="text" id="nameEntry" name="name" size="16"><br>
+            <div>
+                <button type="button" id="nameEntrySubmit">Submit</button>
+            </div> (Just so you know, we'll give you a cookie if you click.)
+        </form>`
+
         let map = L.map("map").setView([53.946, -2.520], 6);
+        var layerGroup = L.layerGroup().addTo(map);
+
+        // Add the end-to-end route
         L.tileLayer(
             "https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=028d7dc81ad647f88f6562ce4ecd34f2", 
             {attribution: 'Maps &copy; <a href="http://www.thunderforest.com">Thunderforest</a>,' +
             ' Data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}
         ).addTo(map);
 
-        var myInit = {  method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        mode: 'cors',
-                        cache: 'default' };
 
-        let myRequest = new Request("/static/js/route.json", myInit);
-
-        fetch(myRequest).then(
+        
+        // fetch route points from static file
+        var initRoute = {method: 'GET', 
+            headers: {'Content-Type': 'application/json'},
+            mode: 'cors',
+            cache: 'default'}
+        let myRouteReq = new Request("/static/js/route.json", initRoute);
+        fetch(myRouteReq).then(
             function(resp) {
                 return resp.json();
             }).then(
                 function(route) {
                     L.geoJSON(route).addTo(map);
+                    addLegend();
                 });
+        loadWalkers();
 
-        // On submit - display layer from GeoJSON
-        function addNewPin() {
-            let miles = document.getElementById("mileage").value;
-            L.map(txt).addTo(layers);
+        // fetch walker marker positions from web API
+        function loadWalkers() {
+            initWalkers = {method: 'GET', 
+                headers: {'Content-Type': 'application/json'},
+                mode: 'cors',
+                cache: 'no-cache'}        
+            let myLatestReq = new Request("https://lejog2021.nw.r.appspot.com/latest", initWalkers);
+            fetch(myLatestReq).then(
+                function(resp) {
+                    return resp.json();
+                }).then(paintMarkers);
         }
-        document.getElementById("submit").addEventListener("click", showGeojson);
+
+        // add legend - one of two types
+        function addLegend() {
+            var legend = L.control({position: "topright"});
+            legend.onAdd = function(map) {
+                let div = L.DomUtil.create("div", "legend");
+                if (globalWalker === undefined) {
+                    div.innerHTML = newUserInner;
+                } else {
+                    div.innerHTML = formInner;
+                }
+                return div;
+            };
+            legend.addTo(map);
+        }
+
+  
+        // On submit - read value of form and call function to update
+        function updateLocationFromForm() {
+            let name = document.getElementById("namePicker").value;
+            let miles = document.getElementById("mileage").value;
+            let date = document.getElementById("datePicker").value;
+            updateLocation(name, miles, date);
+        }
+
+
+        // Add a new record to the database and then move the marker
+        function updateLocation(name, miles, date) {
+            initUpdate = {method: 'POST', 
+                headers: {'Accept': 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name, mileage: miles, date: date}),
+                mode: 'cors',
+                cache: 'no-cache',
+                redirect: 'follow'}        
+            let myUpdateReq = new Request("https://lejog2021.nw.r.appspot.com/update", initUpdate);
+            fetch(myUpdateReq).
+                then(response => {
+                    }
+                );
+        }
+        
 
     </script>
 

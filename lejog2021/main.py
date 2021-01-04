@@ -18,11 +18,13 @@ import json
 from flask import Flask, request, jsonify, render_template
 # import bisect
 from google.cloud import datastore
+from flask_cors import CORS
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
 app = Flask(__name__)
+CORS(app)
 
 
 class InvalidUsage(Exception):
@@ -48,67 +50,16 @@ def handle_invalid_usage(error):
     return response
 
 
-# INITIALISATION METHOD ONLY USED TO PRE-LOAD DATASTORE
-# distances = []
-# points = []
-
-
-# def distance_to_point(d):
-#     global distances
-#     global points
-#     i = bisect.bisect_right(distances, d)
-#     if i == 0:
-#         point = [50.066277, -5.714242]
-#     elif i == len(distances):
-#         point = [58.6439, -3.02604]
-#     else:
-#         d1 = distances[i-1]
-#         d2 = distances[i]
-#         p1 = points[i-1]
-#         p2 = points[i]
-#         f = (d - d1) / (d2 - d1)
-#         lat = (1 - f) * p1[0] + f * p2[0]
-#         lon = (1 - f) * p1[1] + f * p2[1]
-#         point = [lat, lon]
-#     return point
-
-
 @app.route('/')
 def hello():
     """Return a page."""
     return render_template('index.html')
 
 
-# INITIALISATION METHOD ONLY USED TO PRE-LOAD DATASTORE
-# @app.route('/init')
-# def init_datastore():
-
-#     global distances
-#     global points
-#     with open('static/js/progress.json', 'r') as file:
-#         progress = json.load(file)
-#         distances = [p[0] for p in progress]
-#         points = [(p[1], p[2]) for p in progress]
-
-#     datastore_client = datastore.Client()
-#     print(datastore_client)
-#     for d in range(519600, 1111100, 100):
-#         p = distance_to_point(d)
-
-#         # One-time load datastore with look-up from distance to location
-#         key = datastore_client.key('Progress', str(d))
-#         entry = datastore.Entity(key=key, exclude_from_indexes=('point',))
-#         entry.update({'point': p})
-#         print(entry)
-#         datastore_client.put(entry)
-#         print("put done")
-
-#     return render_template('index.html')
-
-
-@app.route('/points', methods=['POST'])
+@app.route('/update', methods=['POST'])
 def update_records():
     update = json.loads(request.data)
+    print(update)
     datastore_client = datastore.Client()
 
     # map mileage to location
@@ -129,16 +80,33 @@ def update_records():
         walker = datastore.Entity(key=name_key)
 
     # update an existing walker
-    walker[update['date']] = point
     walker['latest'] = point
+    walker['latest']['mileage'] = update['mileage']
+    walker['latest']['date'] = update['date']
+    walker[update['date']] = point
     datastore_client.put(walker)
 
-    return jsonify(walker)
+    return get_records()
 
 
-@app.route('/points', methods=['GET'])
+@app.route('/latest', methods=['GET'])
 def get_records():
-    return True
+    datastore_client = datastore.Client()
+    query = datastore_client.query(kind="Walkers")
+    full_list = list(query.fetch())
+    # sift out all the dated entries to leave only the latest
+    results = []
+    for walker in full_list:
+        results.append(
+            {
+                "name": walker.key.name,
+                "point": walker['latest']['point'],
+                "mileage": walker['latest']['mileage'],
+                "date": walker['latest']['date']
+            }
+        )
+    response = jsonify(results)
+    return response
 
 
 if __name__ == '__main__':
