@@ -66,7 +66,7 @@
                 new Date().toDateInputValue()
                 );
                 setTimeout(function() {
-                    Cookies.set('walker', name);
+                    Cookies.set('walker', name, { expires: new Date(2022, 0, 1) });
                     location.reload();
                 }, 3000)
 
@@ -96,7 +96,7 @@
                     button.value = w['name'];
                     button.innerHTML = w['name'] + "<br>last update " + w['date'];
                     button.onclick = function() {
-                        Cookies.set('walker', w['name']);
+                        Cookies.set('walker', w['name'], { expires: new Date(2022, 0, 1) });
                         loadWalkers();
                     }
                     document.getElementById('namePicker').appendChild(button);
@@ -114,7 +114,8 @@
                     }
                     document.getElementById('namePicker').appendChild(opt);   
                 }); 
-                document.getElementById('datePicker').value = new Date().toDateInputValue();                
+                document.getElementById('datePicker').value = new Date().toDateInputValue();
+                document.getElementById("submitMileage").addEventListener("click", updateLocationFromForm);                
             }
         }
 
@@ -126,7 +127,7 @@
             <input type="text" id="mileage" name="mileage" size="10"><br>
             <label>Date</label><br>
             <input type="date" id="datePicker" name="date"><br>
-            <input type="button" id="submit" value="Update">
+            <input type="button" id="submitMileage" value="Update">
         </form>`
         let newUserInner=`
         <form>
@@ -202,6 +203,7 @@
             let name = document.getElementById("namePicker").value;
             let miles = document.getElementById("mileage").value;
             let date = document.getElementById("datePicker").value;
+            document.getElementById("mileage").value = '';
             updateLocation(name, miles, date);
         }
 
@@ -216,10 +218,10 @@
                 cache: 'no-cache',
                 redirect: 'follow'}        
             let myUpdateReq = new Request("https://lejog2021.nw.r.appspot.com/update", initUpdate);
-            fetch(myUpdateReq).
-                then(response => {
-                    }
-                );
+            fetch(myUpdateReq).then(
+                function(resp) {
+                    return resp.json();
+                }).then(paintMarkers);
         }
         
 
