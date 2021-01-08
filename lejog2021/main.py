@@ -14,7 +14,6 @@
 
 # [START gae_python38_app]
 # [START gae_python3_app]
-import json
 from flask import Flask, request, jsonify, render_template
 # import bisect
 from google.cloud import datastore
@@ -56,19 +55,22 @@ def hello():
     return render_template('index.html')
 
 
+# register a new walker
 @app.route('/update', methods=['POST'])
-def update_records():
-    update = json.loads(request.data)
-    print(update)
+def new_walker():
+    print("POST: request")
+    print(request)
+    print("POST:json")
+    print(request.json)
+    update = request.json
     datastore_client = datastore.Client()
 
-    # map mileage to location
-    millimiles = int(round(float(update['mileage']), 1) * 1000)
-    mileage_key = datastore_client.key('Progress', str(millimiles))
+    # make an entry with zero mileage
+    mileage_key = datastore_client.key('Progress', "0")
     point = datastore_client.get(mileage_key)
     if point is None:
         raise InvalidUsage(
-            'Mileage out of range' + update['mileage'],
+            'Mileage out of range: ' + update['mileage'],
             status_code=410)
 
     # the request should contain name, date, mileage
@@ -78,18 +80,65 @@ def update_records():
     if walker is None:
         # first time entry for this walker
         walker = datastore.Entity(key=name_key)
+    else:
+        raise InvalidUsage(
+            'Walker already exists: ' + update['name'],
+            status_code=410)
 
-    # update an existing walker
+    # load an initial entry
     walker['latest'] = point
-    walker['latest']['mileage'] = update['mileage']
+    walker['latest']['mileage'] = "0"
     walker['latest']['date'] = update['date']
     walker[update['date']] = point
     datastore_client.put(walker)
 
-    return get_records()
+    return jsonify(walker)
 
 
-@app.route('/latest', methods=['GET'])
+# record new mileage for a walker
+@app.route('/update', methods=['PUT'])
+def update_walker():
+    print("PUT: request")
+    print(request)
+    print("PUT:json")
+    print(request.json)
+    update = request.json
+
+    datastore_client = datastore.Client()
+
+    # map mileage to location
+    try:
+        millimiles = int(round(float(update['mileage']), 1) * 1000)
+        mileage_key = datastore_client.key('Progress', str(millimiles))
+        point = datastore_client.get(mileage_key)
+        if point is None:
+            raise InvalidUsage(
+                'Mileage out of range' + update['mileage'],
+                status_code=410)
+
+        # the request should contain name, date, mileage
+        name_key = datastore_client.key('Walkers', update['name'])
+        walker = datastore_client.get(name_key)
+
+        if walker is None:
+            # first time entry for this walker
+            walker = datastore.Entity(key=name_key)
+
+        # update an existing walker
+        walker['latest'] = point
+        walker['latest']['mileage'] = update['mileage']
+        walker['latest']['date'] = update['date']
+        walker[update['date']] = point
+        datastore_client.put(walker)
+    except Exception as e:
+        raise InvalidUsage(
+            str(type(e)) + ": " + str(e),
+            status_code=410)
+
+    return jsonify(walker)
+
+
+@app.route('/walkers', methods=['GET'])
 def get_records():
     datastore_client = datastore.Client()
     query = datastore_client.query(kind="Walkers")
