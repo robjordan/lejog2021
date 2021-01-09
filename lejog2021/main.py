@@ -58,6 +58,16 @@ def hello():
 # register a new walker
 @app.route('/update', methods=['POST'])
 def new_walker():
+    colours = [
+        "green",
+        "red",
+        "lightblue",
+        "gold",
+        "pink",
+        "darkblue",
+        "yellow",
+        "purple"
+    ]
     print("POST: request")
     print(request)
     print("POST:json")
@@ -72,6 +82,12 @@ def new_walker():
         raise InvalidUsage(
             'Mileage out of range: ' + update['mileage'],
             status_code=410)
+
+    # how many walkers registered so far
+    query = datastore_client.query(kind='Walkers')
+    num_walkers = len(list(query.fetch()))
+    print(str(num_walkers) + " walkers prior to this call")
+    colour = colours[num_walkers % 8]
 
     # the request should contain name, date, mileage
     name_key = datastore_client.key('Walkers', update['name'])
@@ -90,6 +106,7 @@ def new_walker():
     walker['latest']['mileage'] = "0"
     walker['latest']['date'] = update['date']
     walker[update['date']] = point
+    walker['colour'] = colour
     datastore_client.put(walker)
 
     return jsonify(walker)
@@ -151,7 +168,8 @@ def get_records():
                 "name": walker.key.name,
                 "point": walker['latest']['point'],
                 "mileage": walker['latest']['mileage'],
-                "date": walker['latest']['date']
+                "date": walker['latest']['date'],
+                "colour": walker['colour']
             }
         )
     response = jsonify(results)

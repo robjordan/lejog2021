@@ -57,7 +57,41 @@
         // the map
         var map = L.map("map").setView([53.946, -2.520], 6);
         var layerGroup = L.layerGroup().addTo(map);
-        
+        var icons = {
+            'green': L.icon({
+                    iconUrl: '/static/img/marker-icon-green.png',
+                    iconAnchor: [12, 41],
+                }),
+            'red': L.icon({
+                iconUrl: '/static/img/marker-icon-red.png',
+                iconAnchor: [12, 41],
+                }),
+            'gold': L.icon({
+                iconUrl: '/static/img/marker-icon-gold.png',
+                iconAnchor: [12, 41],
+                }),
+            'yellow': L.icon({
+                iconUrl: '/static/img/marker-icon-yellow.png',
+                iconAnchor: [12, 41],
+                }),
+            'lightblue': L.icon({
+                iconUrl: '/static/img/marker-icon-lightblue.png',
+                iconAnchor: [12, 41],
+                }),
+            'darkblue': L.icon({
+                iconUrl: '/static/img/marker-icon-darkblue.png',
+                iconAnchor: [12, 41],
+                }),
+            'purple': L.icon({
+                iconUrl: '/static/img/marker-icon-purple.png',
+                iconAnchor: [12, 41],
+                }),
+            'pink': L.icon({
+                iconUrl: '/static/img/marker-icon-pink.png',
+                iconAnchor: [12, 41],
+                })
+        }
+
         // templates for the two varieties of form we use
         var mileageFormInner=`
         <form id="mileageUpdateForm" onsubmit="updateLocationFromForm(event)">
@@ -207,7 +241,7 @@
                 walkers = data;
                 walkers.forEach(function(w, index) {
                     // add a popup marker on  screen
-                    var marker = L.marker(w['point'], {title: w['name'], riseOnHover: true, color: 'red'});
+                    var marker = L.marker(w['point'], {title: w['name'], riseOnHover: true, icon: icons[w['colour']]});
                     marker.bindPopup("<b>" + w['name'] + "</b><br/>" + w['mileage'] + " miles<br/>" + w['date']).openPopup();
                     marker.addTo(layerGroup);
                 });
