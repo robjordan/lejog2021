@@ -54,7 +54,7 @@
         // name of the current walker - or undefined if we haven't identified
         var walker = Cookies.get('walker');
         
-        // the map
+        // the map and markers
         var map = L.map("map").setView([53.946, -2.520], 6);
         var layerGroup = L.layerGroup().addTo(map);
         var icons = {
@@ -279,7 +279,7 @@
             let date = document.getElementById("datePicker").value;
             if (mileage.length > 0) {
                 updateLocation(name, date, mileage).then(data => {
-                    console.log(data);
+                    // console.log(data);
                     paintWalkers();
                     document.getElementById("mileage").value = '';
                 });

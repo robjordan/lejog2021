@@ -109,7 +109,7 @@ def new_walker():
     walker['colour'] = colour
     datastore_client.put(walker)
 
-    return jsonify(walker)
+    return jsonify(walker['latest'])
 
 
 # record new mileage for a walker
@@ -152,7 +152,7 @@ def update_walker():
             str(type(e)) + ": " + str(e),
             status_code=410)
 
-    return jsonify(walker)
+    return jsonify(walker['latest'])
 
 
 @app.route('/walkers', methods=['GET'])
