@@ -22,6 +22,7 @@ libcst==0.3.16
 MarkupSafe==1.1.1
 mccabe==0.6.1
 mypy-extensions==0.4.3
+osgb==1.0.0
 proto-plus==1.13.0
 protobuf==3.14.0
 pyasn1==0.4.8

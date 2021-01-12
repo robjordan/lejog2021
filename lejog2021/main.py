@@ -18,6 +18,7 @@ from flask import Flask, request, jsonify, render_template
 # import bisect
 from google.cloud import datastore
 from flask_cors import CORS
+import osgb
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -169,7 +170,19 @@ def get_records():
                 "point": walker['latest']['point'],
                 "mileage": walker['latest']['mileage'],
                 "date": walker['latest']['date'],
-                "colour": walker['colour']
+                "colour": walker['colour'],
+                "hectad": osgb.gridder.format_grid(
+                    osgb.convert.ll_to_grid(
+                        walker['latest']['point'][0],
+                        walker['latest']['point'][1]
+                    ),
+                    form='SSEN'),
+                "gridref": osgb.gridder.format_grid(
+                    osgb.convert.ll_to_grid(
+                        walker['latest']['point'][0],
+                        walker['latest']['point'][1]
+                    ),
+                    form='SSEENN')
             }
         )
     response = jsonify(results)

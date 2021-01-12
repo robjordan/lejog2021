@@ -219,11 +219,7 @@
                 ' Data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}
             ).addTo(map);
 
-            // Add photos
-            var gph = L.geographPhotos({api_key:'54b811a5cb', autoZoomOnAdd: true, query:''});
-	        gph.addTo(map);
-
-            
+        
             // fetch route points from static file
             var initRoute = {method: 'GET', 
                 headers: {'Content-Type': 'application/json'},
@@ -257,6 +253,14 @@
                     var marker = L.marker(w['point'], {title: w['name'], riseOnHover: true, icon: icons[w['colour']]});
                     marker.bindPopup("<b>" + w['name'] + "</b><br/>" + w['mileage'] + " miles<br/>" + w['date']).openPopup();
                     marker.addTo(layerGroup);
+
+                    // add photos in the walker's grid square
+                    var gph = L.geographPhotos({
+                        api_key:'54b811a5cb', 
+                        autoZoomOnAdd: true, 
+                        query: w['gridref']});
+                    gph.addTo(layerGroup);
+                    
                 });
             });
         }
