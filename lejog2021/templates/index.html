@@ -104,7 +104,8 @@
         var mileageFormInner=`
         <form id="mileageUpdateForm" onsubmit="updateLocationFromForm(event)">
             <label>Your name</label><br>
-            <select id="namePicker" name="name"></select><br>
+            <select name="name" id="namePicker" onchange="onChangeName(event)">
+            </select><br>
             <label>Miles completed</label><br>
             <input type="text" id="mileage" name="mileage" size="10"><br>
             <label>Date</label><br>
@@ -129,6 +130,16 @@
             local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
             return local.toJSON().slice(0,10);
         }); 
+
+        // onChangeName. Called each time a different walker name is chosen. 
+        // Actual walker names are ignored, but the special value "new_walker"
+        // triggers a re-enroll.
+        function onChangeName(event) {
+            if (event.target.value == "new_walker") {
+                Cookies.expire("walker");
+                location.reload();
+            }
+        }
 
         // Fetch walker marker positions from web API
         // This is the 'inner' function that uses the fetch() API and returns
@@ -190,7 +201,13 @@
                             opt.setAttribute('selected', true);
                         }
                         document.getElementById('namePicker').appendChild(opt);   
-                    }); 
+                    });
+                    // one extra button in case walker isn't registered
+                    var opt = document.createElement('option');
+                    opt.value = "new_walker";
+                    opt.innerHTML = "None of the above";
+                    document.getElementById('namePicker').appendChild(opt);
+                    // initialise the date to today
                     document.getElementById('datePicker').value = new Date().toDateInputValue();
                 }
             });
@@ -218,6 +235,7 @@
                 {attribution: 'Maps &copy; <a href="http://www.thunderforest.com">Thunderforest</a>,' +
                 ' Data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'}
             ).addTo(map);
+            L.control.scale().addTo(map);
 
         
             // fetch route points from static file
@@ -259,7 +277,7 @@
                         api_key:'54b811a5cb', 
                         autoZoomOnAdd: false,
                         autoLoadOnMove: false,
-                        geo: [w['point'][0],w['point'][1],500],
+                        geo: [w['point'][0],w['point'][1],750],
                         query: ''});
                     gph.addTo(layerGroup);
                     
@@ -299,6 +317,7 @@
             if (mileage.length > 0) {
                 updateLocation(name, date, mileage).then(data => {
                     // console.log(data);
+                    Cookies.set('walker', name, { expires: new Date(2022, 0, 1) });
                     paintWalkers();
                     document.getElementById("mileage").value = '';
                 });
