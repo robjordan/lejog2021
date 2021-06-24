@@ -126,7 +126,7 @@ def update_walker():
 
     # map mileage to location
     try:
-        millimiles = int(round(float(update['mileage']), 1) * 1000)
+        millimiles = round(round(float(update['mileage']), 1)*1000)
         mileage_key = datastore_client.key('Progress', str(millimiles))
         point = datastore_client.get(mileage_key)
         if point is None:
@@ -149,6 +149,9 @@ def update_walker():
         walker[update['date']] = point
         datastore_client.put(walker)
     except Exception as e:
+        print("PUT: exception")
+        print(str(type(e)))
+        print(str(e))
         raise InvalidUsage(
             str(type(e)) + ": " + str(e),
             status_code=410)
